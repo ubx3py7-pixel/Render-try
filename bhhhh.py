@@ -155,51 +155,48 @@ async def m_addapi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Send your bot token now (123456:ABC...).")
 
 @only_owner
-async def m_stat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    total_users = len(USERS)
-    total_tokens = sum(len(v) for v in USERS.values())
-    out = f"📊 Stats:\nUsers: {total_users}\nAPIs: {total_tokens}\n\n"
-    for uid_str, toks in USERS.items():
-        out += f"{uid_str}: {len(toks)} APIs\n"
-    await update.message.reply_text(out)
-
 async def m_handle_token(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if uid not in awaiting_token_users:
         return
+
     awaiting_token_users.discard(uid)
-
     token = update.message.text.strip()
-    if ":" not in token:
-        return await update.message.reply_text("❌ Invalid token format.")
 
-    # validate
+    if ":" not in token:
+        await update.message.reply_text("❌ Invalid token format.")
+        return
+
+    # Validate bot token
     try:
         bot = TgBot(token)
         me = await bot.get_me()
     except Exception as e:
-        return await update.message.reply_text(f"❌ Token invalid: {e}")
+        await update.message.reply_text(f"❌ Token invalid: {e}")
+        return
 
-    # save
+    # Save token
     USERS.setdefault(str(uid), []).append(token)
     TOKENS.append(token)
     save_all()
 
-    # start worker
+    # Start worker bot
     try:
         app = build_worker_app(token, owner_id=uid)
         worker_apps.append(app)
+
         await app.initialize()
         await app.start()
         await app.updater.start_polling()
         worker_bots.append(app.bot)
 
         await update.message.reply_text(f"✅ Worker bot started as @{me.username}")
+
     except Exception as e:
         USERS[str(uid)].remove(token)
         TOKENS.remove(token)
         save_all()
-        return await update.message.reply_text(f"❌ Failed to start worker: {e}")
+        await update.message.reply_text(f"❌ Failed to start worker: {e}")
 
 def build_manager_app(token: str) -> Application:
     app = Application.builder().token(token).build()
