@@ -497,8 +497,7 @@ def build_worker_app(token: str, owner_id: int) -> Application:
         if chat_id in swipe_mode:
             for text in RAID_TEXTS:
                 await update.message.reply_text(f"{swipe_mode[chat_id]} {text}")
-
-    # register handlers
+# register handlers
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("ping", ping_cmd))
@@ -519,9 +518,8 @@ def build_worker_app(token: str, owner_id: int) -> Application:
     app.add_handler(CommandHandler("swipe", swipe))
     app.add_handler(CommandHandler("stopswipe", stopswipe))
 
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, auto_replies))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, auto_replies))
     return app
-
 # ---------------------------
 # Startup: start manager + persisted workers
 # ---------------------------
